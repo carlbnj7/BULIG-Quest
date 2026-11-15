@@ -23,6 +23,7 @@ $out=match($what){
  /* v202 content audit: every keyed multiple-choice answer is one of its card's choices, no key points past the last card,
     and Level 5 Grade 3 keeps module order (answer-key pages 13 and 53 leave a gap): php tests/probe.php key_audit */
  /* v217 System Developer: the SQL splitter, what a migration makes, plain-word errors (php tests/probe.php syscheck) */
+ 'sc_rules'=>['bad'=>array_map(fn($x)=>valid_pin($x),['0000','1111','5555','9999','1234']),'good'=>valid_pin('4826')],
  'syscheck'=>(function():array{$st=sys_split_sql("-- note; here\nCREATE TABLE a(x VARCHAR(5) DEFAULT 'a;b');\n/* c; */INSERT INTO a VALUES('it''s; ok');\n# hash; line\nUPDATE a SET x=\"q;\";");
   $pr=sys_probes("CREATE TABLE IF NOT EXISTS week_plans(id INT);\nALTER TABLE activity_completion ADD COLUMN IF NOT EXISTS time_secs INT, ADD INDEX i(x);");
   $M=sys_migrations();$F=sys_files();

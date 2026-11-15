@@ -50,6 +50,7 @@ const WHATS_NEW=[
  'pupil'=>[
   ['star','Star Jars','Every star goes in your Star Jar. Tap the jar on your road map to see it. Zion the Star Keeper keeps them!'],
   ['check','Play again for 3 stars','Got 1 or 2 stars? Tap Play again. A new star gives +5 XP. Already 3 stars? Practice for +2 XP. Your best is always kept.'],
+  ['shield','Your Secret Code','After your password, you now type a 4-number Secret Code that only you know. Make it the first time you sign in and earn +20 XP. Forgot it? Ask your teacher.'],
   ['star','A paper sky','Your name panel has a paper sky that changes with the time of day: blue in the morning, orange in the afternoon and stars at night. Pages also move more smoothly.'],
   ['arrow','Continue where you stopped','Left an activity half done? Tap Continue on your Overview. A yellow speaker reads cards to you, and Jeepy drives you to the next lesson. Settings has a calm mode too.'],
   ['star','Weekly mission and Star Race','Earn 10 stars this week for +30 XP from Zion! Help your section win the Class Star Race. Listen to your first and latest reading with Max.'],
@@ -61,6 +62,7 @@ const WHATS_NEW=[
  'teacher'=>[
   ['star','Star Jars and Play again','Pupils can play a finished activity again for 3 stars. BULIG Quest keeps the best score and still saves the first try for you.'],
   ['cal','Week plan, groups and notes','Pick a lesson for each day (Week plan), make reading groups to message or print, and keep private notes on a pupil. Home now has tabs.'],
+  ['shield','PIN for everyone','Every account now types a 4-digit PIN after the password. My Pupils › Secret Codes shows who made one; Clear code lets a pupil make a new one.'],
   ['people','Parent cards and Needs help','Print a progress card for each family, with a QR code to a read-only page. Home now lists pupils who may need you. The administrator can set answering hours.'],
   ['chart','Reading growth','Teaching › Reading growth shows how each pupil’s reading changed: pre-test to post-test, started at to now, and Level 4 words per minute and accuracy. Print it for your panel.'],
   ['clock','Time on each activity','Roxanne the Timekeeper shows how long each answer took (pupil › Answers and scores). Red means much slower than the class usually takes.'],
@@ -71,6 +73,7 @@ const WHATS_NEW=[
  'admin'=>[
   ['star','Star Jars and Play again','Pupils can play a finished activity again for 3 stars. The best score is kept, and the first try is saved for teachers.'],
   ['chart','Reading growth by grade','Your dashboard shows the average pre-test and post-test of each grade. Jarvis reminds you to download a backup each month.'],
+  ['shield','PIN for everyone','Every account, admins included, types a 4-digit PIN after the password, in a popup. A new password you make for someone also clears their PIN.'],
   ['clock','Answering hours','Settings › Schedule: choose the days and times pupils may answer. Outside them, Roxanne tells pupils when answering opens. Work made without internet is always kept.'],
   ['print','Admin passes','Print admin passes from the Print Centre. ID cards are coloured by role.'],
   ['shield','Division Viewer','A new view-only role that sees every school in the division.'],

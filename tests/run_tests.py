@@ -168,7 +168,26 @@ class Client:
 
     def login(self, role, public_id, password):
         tok = self.token(f'?page=login&role={role}&form=1&confirm=1')
-        return self.req('index.php', {'action': 'login', 'role': role, 'public_id': public_id, 'password': password, 'csrf': tok})
+        return self.secret_code(self.req('index.php', {'action': 'login', 'role': role, 'public_id': public_id, 'password': password, 'csrf': tok}))
+
+    SECRET = '4826'
+
+    def secret_code(self, resp):
+        """v219 every account types a Secret Code after the password: make it the first time, then type it."""
+        status, url, text = resp
+        for _ in range(4):
+            if 'code=1' not in url:
+                break
+            tok = (re.search(r'name="csrf" value="([0-9a-f]+)"', text) or [None, ''])[1]
+            if 'value="sc_go"' in text:
+                status, url, text = self.req('index.php', {'action': 'sc_go', 'csrf': tok})
+            elif 'value="sc_create"' in text:
+                status, url, text = self.req('index.php', {'action': 'sc_create', 'pin': self.SECRET, 'csrf': tok})
+            elif 'value="sc_enter"' in text:
+                status, url, text = self.req('index.php', {'action': 'sc_enter', 'pin': self.SECRET, 'csrf': tok})
+            else:
+                break
+        return status, url, text
 
 
 def page_ok(c, path, label, signed_in=True):
@@ -192,6 +211,7 @@ def wait_for_server():
 def test_app():
     section('3. Test accounts')
     acc = php_cli('seed.php')
+    Client.SECRET = acc['admin']['pin']   # v219 one Secret Code for every test account (the admin already has it)
     check('Test admin, teacher and two pupils were added', acc.get('pupil1', {}).get('uid'))
     log = open(LOG, 'w')
     server = subprocess.Popen(['php', '-d', 'display_errors=1', '-d', 'error_reporting=-1', '-d', 'log_errors=1', '-d', 'opcache.enable=0',
@@ -236,8 +256,19 @@ def run_pages(acc):
     _, url, text = Client().login('auto', acc['teacher']['id'], acc['teacher']['pw'])
     check('One form: BULIG knows a teacher from the ID', 'dashboard' in url and 'role-teacher' in text, url)
     _, url, text = Client().login('auto', acc['admin']['id'], acc['admin']['pw'])
-    check('One form: BULIG knows the administrator from the ID and signs them in without a PIN (v210)', 'data-pin-form' not in text and 'page=dashboard' in url, url)
+    check('One form: BULIG knows the administrator from the ID and signs them in after the PIN popup (v219)', 'data-pin-form' not in text and 'page=dashboard' in url, url)
     check('The administrator gets the welcome screen with an admin character after signing in', 'data-hello' in text and 'hello-admin' in text and 'admin-' in text)
+    # v219 Secret Code: every account types a 4-number code after the password, in a popup on the sign-in page
+    sc = Client(); tok = sc.token('?page=login')
+    _, url, text = sc.req('index.php', {'action': 'login', 'role': 'auto', 'public_id': acc['teacher']['id'], 'password': acc['teacher']['pw'], 'csrf': tok})
+    check('Secret Code: after the password the sign-in page shows the code popup, not a separate page (v219)', 'code=1' in url and 'sc-shade' in text and 'name="public_id"' in text, url)
+    tok = re.search(r'name="csrf" value="([0-9a-f]+)"', text).group(1)
+    _, url, text = sc.req('index.php', {'action': 'sc_enter', 'pin': '1357', 'csrf': tok})
+    check('Secret Code: a wrong code is refused and says how many tries are left', 'code=1' in url and 'more tries' in text and 'role-teacher' not in text, url)
+    _, url, text = sc.secret_code((200, url, text))
+    check('Secret Code: the right code signs the teacher in', 'dashboard' in url and 'role-teacher' in text, url)
+    r = php_cli('probe.php', 'sc_rules', 0)
+    check('Secret Code rules: 0000, the same number 4 times and 1234 are refused; 4826 is fine', r.get('bad') == [False] * len(r.get('bad', [])) and r.get('good') is True, str(r))
     r = php_cli('probe.php', 'tries', 0)
     check('Each wrong try takes away a third of the card (1 wrong try: 0.67, 2: 0.33, 3: 0)', r.get('ok') and r.get('pts') == [1, 0.67, 0.33, 0], str(r))
     r = php_cli('probe.php', 'level3ab', 0)
@@ -398,10 +429,8 @@ def run_pages(acc):
 
     section('8. Admin (with PIN)')
     a = Client()
-    a.login('admin', acc['admin']['id'], acc['admin']['pw'])
-    tok = a.token('?page=login&role=admin&confirm=1')
-    status, url, _ = a.req('index.php', {'action': 'admin_pin', 'pin': acc['admin']['pin'], 'csrf': tok})
-    if check('Admin can sign in with password and PIN', 'dashboard' in url, url):
+    status, url, _ = a.login('admin', acc['admin']['id'], acc['admin']['pw'])
+    if check('Admin can sign in with password and PIN (the Secret Code popup, v219)', 'dashboard' in url, url):
         for pg in ('dashboard', 'accounts', 'reports', 'activity_log', 'checkup', 'settings', 'teacher_cards',
                    'teacher_import', 'guide', 'profile', 'notifications', 'visual_audit', 'add_teachers',
                    'add_teachers&mode=many', 'print', 'moved', 'admin_pass', 'story'):
@@ -864,7 +893,7 @@ def test_roles(acc):
     m1 = m1b
     def qrkey(pid):
         mm = re.search(r'data-qr="\?page=login&amp;key=([A-Za-z0-9_-]+)"', a.req(f'?page=admin_passes&id={pid}')[2]); return mm.group(1) if mm else ''
-    k1 = qrkey(m1.group(1)); kc = Client(); _, ku, kt = kc.req('index.php', {'action': 'key_login', 'key': k1, 'csrf': kc.token(f'?page=login&key={k1}')})
+    k1 = qrkey(m1.group(1)); kc = Client(); _, ku, kt = kc.secret_code(kc.req('index.php', {'action': 'key_login', 'key': k1, 'csrf': kc.token(f'?page=login&key={k1}')}))
     check('An admin ID card QR code signs the admin in', bool(k1) and 'page=dashboard' in ku, ku)
     mc = Client(); mc.login('admin', m1.group(1), m1.group(2))
     check('The Municipal Admin cannot create a School Admin (one level down only)', mc.req('index.php', {'action': 'org_create', 'name': 'Skip Level', 'role': 'school_admin', 'scope': f'school:{sid}', 'csrf': mc.token('?page=org')})[0] == 403)

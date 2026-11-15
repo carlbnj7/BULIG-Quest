@@ -43,6 +43,7 @@ function action():void{
  if($action==='rate_app'||$action==='rate_later')rate_action($action);/* app ratings (v152) */
  if($action==='moved_seen')staff_action($action);
  if($action==='move_section')pupils_move_section(require_role('teacher'));
+ if(str_starts_with($action,'sc_'))sc_actions($action);   // v219 Secret Code
  if($action==='login'){
   $id=trim((string)($_POST['public_id']??''));$role=(string)($_POST['role']??'pupil');$key=hash('sha256',strtolower($id));
   if(login_tries_used($key)>=LOGIN_MAX_TRIES){audit('login_locked',mb_substr($role.' · '.$id,0,60));login_back($role,$id,$key);}
@@ -54,19 +55,17 @@ function action():void{
   $u=null;foreach($cands as $c)if(password_verify($pw,$c['password_hash'])){$u=$c;break;}
   if($u)$role=$u['role'];elseif($any)$role='auto';
   if(!$u){q('INSERT INTO login_attempts(identifier_hash) VALUES(?)',[$key]);audit('login_failed',mb_substr($role.' · '.$id,0,60));login_back($role,$id,$key);}
-  q('DELETE FROM login_attempts WHERE identifier_hash=?',[$key]);if(strcasecmp($id,(string)$u['public_id'])!==0)flash('Your '.$role.' ID is now '.$u['public_id'].'. Your old ID still works, but please use the new one.');session_regenerate_id(true);$_SESSION['uid']=$u['id'];$_SESSION['csrf']=bin2hex(random_bytes(32));if($role==='pupil')$_SESSION['pupil_welcome']=1;if($role==='teacher'){$_SESSION['teacher_welcome']=1;$_SESSION['offer_save']=1;}$_SESSION['hello']=1;   /* v211 admins get the welcome too (the PIN step that showed it is gone) */audit('login',$role);go('?page=dashboard');
+  q('DELETE FROM login_attempts WHERE identifier_hash=?',[$key]);if(strcasecmp($id,(string)$u['public_id'])!==0)flash('Your '.$role.' ID is now '.$u['public_id'].'. Your old ID still works, but please use the new one.');sc_gate($u,['hello'=>1]+($role==='pupil'?['pupil_welcome'=>1]:[])+($role==='teacher'?['teacher_welcome'=>1,'offer_save'=>1]:[]),'password');   // v219 the Secret Code popup comes next
  }
  if($action==='key_login'){
   /* One scan of a sign-in ticket: the QR code opens a "Hi, NAME!" page, and this button signs the pupil in. */
   $u=card_user_any((string)($_POST['key']??''));if(!$u){audit('login_failed','ticket');fail('This sign-in ticket no longer works. Ask for a new one, or sign in with your ID and password.');}
   /* v211 a QR code signs in every time, even after the password is changed (a new password from the administrator makes a new QR code) */
-  session_regenerate_id(true);$_SESSION=[];$_SESSION['uid']=$u['id'];$_SESSION['csrf']=bin2hex(random_bytes(32));
-  if($u['role']==='pupil')$_SESSION['pupil_welcome']=1;else $_SESSION['teacher_welcome']=1;   // pupils: no save / download pop-ups after signing in (v180); saving is offered when signing out
-  $_SESSION['hello']=1;audit('login',$u['role']==='pupil'?'pupil · ticket':($u['role']==='admin'?'admin · ID card':'teacher · pass'));go('?page=dashboard');
+  $_SESSION=[];sc_gate($u,['hello'=>1]+($u['role']==='pupil'?['pupil_welcome'=>1]:['teacher_welcome'=>1]),$u['role']==='pupil'?'ticket':'pass');   // v219 pupils: no save / download pop-ups after signing in (v180)
  }
  if($action==='card_new'||$action==='cards_starter'){
   $u=require_role('teacher');if(!cards_ready())fail('Ask the administrator to import 018_pupil_cards.sql first.');$sec=(int)($_POST['section']??0);$back='?page=cards'.($sec?'&section='.$sec:'');
-  if($action==='card_new'){$id=(int)($_POST['id']??0);own_pupil($id);$b=(string)($_POST['back']??'');if(preg_match('~^\?page=pupil&id=[0-9]+&tab=account$~',$b))$back=$b;$n=card_issue($id,true);$p=one('SELECT name,public_id FROM users WHERE id=?',[$id]);audit('card_new',(string)$p['public_id']);
+  if($action==='card_new'){$id=(int)($_POST['id']??0);own_pupil($id);$b=(string)($_POST['back']??'');if(preg_match('~^\?page=pupil&id=[0-9]+&tab=account$~',$b))$back=$b;$n=card_issue($id,true);if(function_exists('sc_clear'))sc_clear($id);   /* v219 a new ticket clears the Secret Code */$p=one('SELECT name,public_id FROM users WHERE id=?',[$id]);audit('card_new',(string)$p['public_id']);
    flash('New ticket for '.$p['name'].'. Starter password: '.$n['pw'].'. The old QR code no longer works.');go($back);}
   $ids=array_map('intval',array_column(rows('SELECT t.pupil_id FROM teacher_pupils t JOIN users u ON u.id=t.pupil_id WHERE t.teacher_id=? AND u.active=1'.($sec?' AND EXISTS(SELECT 1 FROM pupil_sections ps WHERE ps.pupil_id=u.id AND ps.section_id=?)':''),$sec?[$u['id'],$sec]:[$u['id']]),'pupil_id'));$done=0;
   foreach($ids as $id){$h=(string)val('SELECT password_hash FROM users WHERE id=?',[$id]);if(password_verify('12345678',$h)){card_issue($id,true);$done++;}}
@@ -76,8 +75,7 @@ function action():void{
   if(!saved_login_ready())saved_login_json(['ok'=>false,'error'=>'Saved sign-in is not ready yet. Please sign in with your ID.']);
   $u=saved_login_use((string)($_POST['token']??''));
   if(!$u){audit('login_failed','saved sign-in');saved_login_json(['ok'=>false,'error'=>'This saved sign-in has expired. Please sign in with your ID and password.']);}
-  session_regenerate_id(true);$_SESSION['uid']=$u['id'];$_SESSION['csrf']=bin2hex(random_bytes(32));if($u['role']==='pupil')$_SESSION['pupil_welcome']=1;else $_SESSION['teacher_welcome']=1;$_SESSION['hello']=1;
-  audit('login',$u['role']);saved_login_json(['ok'=>true,'url'=>'?page=dashboard','profile'=>saved_login_profile($u)]);
+  sc_gate($u,['hello'=>1]+($u['role']==='pupil'?['pupil_welcome'=>1]:['teacher_welcome'=>1]),'saved',true);   // v219 the Secret Code popup comes next
  }
  if($action==='save_login'){
   $u=current_user();if(!$u||!in_array($u['role'],['pupil','teacher'],true))saved_login_json(['ok'=>false,'error'=>'Only pupils and teachers can be saved.']);

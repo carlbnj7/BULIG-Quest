@@ -343,7 +343,7 @@ function admin_actions(string $action):void{
  $u=require_role('admin');
  if($action==='admin_level_schedule')schedule_admin_save();
  if($action==='admin_lesson_cycles')cycle_admin_save();
- if($action==='admin_reset_password'){$t=admin_teacher((int)($_POST['id']??0));$p=admin_new_password();q('UPDATE users SET password_hash=? WHERE id=?',[password_hash($p,PASSWORD_DEFAULT),$t['id']]);saved_login_clear((int)$t['id']);try{q("DELETE FROM remember_tokens WHERE user_id=?",[$t['id']]);}catch(Throwable $e){}
+ if($action==='admin_reset_password'){$t=admin_teacher((int)($_POST['id']??0));$p=admin_new_password();q('UPDATE users SET password_hash=? WHERE id=?',[password_hash($p,PASSWORD_DEFAULT),$t['id']]);if(function_exists('sc_clear'))sc_clear((int)$t['id']);   /* v219 a new password clears the PIN */saved_login_clear((int)$t['id']);try{q("DELETE FROM remember_tokens WHERE user_id=?",[$t['id']]);}catch(Throwable $e){}
   audit('admin_reset_password',(string)$t['id']);flash('New password for '.$t['name'].' ('.$t['public_id'].'): '.$p.' — give it to the teacher privately. They can change it in My profile.');go('?page=accounts');}
  if($action==='admin_toggle_teacher'){$t=admin_teacher((int)($_POST['id']??0));q('UPDATE users SET active=1-active WHERE id=?',[$t['id']]);audit('admin_toggle_teacher',(string)$t['id']);flash($t['name'].' is now '.($t['active']?'turned off. They cannot sign in.':'turned on.'));go('?page=accounts');}
  if($action==='admin_section_save'||$action==='admin_section_add'){
