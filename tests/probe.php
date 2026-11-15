@@ -22,6 +22,12 @@ $out=match($what){
  /* Cycles (v182): lessons 2 and up of the pupil's level open in 10 days; lesson 1 stays open. Settings are put back after. */
  /* v202 content audit: every keyed multiple-choice answer is one of its card's choices, no key points past the last card,
     and Level 5 Grade 3 keeps module order (answer-key pages 13 and 53 leave a gap): php tests/probe.php key_audit */
+ /* v217 System Developer: the SQL splitter, what a migration makes, plain-word errors (php tests/probe.php syscheck) */
+ 'syscheck'=>(function():array{$st=sys_split_sql("-- note; here\nCREATE TABLE a(x VARCHAR(5) DEFAULT 'a;b');\n/* c; */INSERT INTO a VALUES('it''s; ok');\n# hash; line\nUPDATE a SET x=\"q;\";");
+  $pr=sys_probes("CREATE TABLE IF NOT EXISTS week_plans(id INT);\nALTER TABLE activity_completion ADD COLUMN IF NOT EXISTS time_secs INT, ADD INDEX i(x);");
+  $M=sys_migrations();$F=sys_files();
+  return ['n'=>count($st),'second'=>$st[1]??'','probes'=>$pr,'migs'=>count($M),'todo'=>count(array_filter($M,fn($m)=>$m['status']==='todo')),'files_total'=>$F['total']??0,'files_bad'=>array_column($F['bad']??[],0),
+   'plain_table'=>sys_err_plain(['k'=>'stopped','m'=>"SQLSTATE[42S02]: Table 'x.pupil_notes' doesn't exist"])[0],'plain_fn'=>sys_err_plain(['k'=>'fatal','m'=>'Call to undefined function foo()'])[0]];})(),
  'key_audit'=>(function():array{$n=fn($s)=>key_norm(preg_replace('~^\s*[a-z]\s*[.)]\s*~i','',(string)$s));$bad=[];$checked=0;
   foreach(rows('SELECT a.* FROM activities a JOIN lessons l ON l.id=a.lesson_id WHERE a.published=1 AND l.published=1') as $a){$key=activity_key($a);if(!$key)continue;$s=l2a_set($a);$cards=$s['cards']??[];
    foreach($key as $i=>$k){$c=$cards[(int)$i-1]??null;if($cards&&!$c){$bad[]=activity_key_id($a).' card '.$i.' missing';continue;}

@@ -50,6 +50,7 @@ const WHATS_NEW=[
  'pupil'=>[
   ['star','Star Jars','Every star goes in your Star Jar. Tap the jar on your road map to see it. Zion the Star Keeper keeps them!'],
   ['check','Play again for 3 stars','Got 1 or 2 stars? Tap Play again. A new star gives +5 XP. Already 3 stars? Practice for +2 XP. Your best is always kept.'],
+  ['star','A paper sky','Your name panel has a paper sky that changes with the time of day: blue in the morning, orange in the afternoon and stars at night. Pages also move more smoothly.'],
   ['arrow','Continue where you stopped','Left an activity half done? Tap Continue on your Overview. A yellow speaker reads cards to you, and Jeepy drives you to the next lesson. Settings has a calm mode too.'],
   ['star','Weekly mission and Star Race','Earn 10 stars this week for +30 XP from Zion! Help your section win the Class Star Race. Listen to your first and latest reading with Max.'],
   ['clock','Roxanne the Timekeeper','After each activity, Roxanne tells you how long it took. Try to beat your fastest time!'],
@@ -73,7 +74,7 @@ const WHATS_NEW=[
   ['clock','Answering hours','Settings › Schedule: choose the days and times pupils may answer. Outside them, Roxanne tells pupils when answering opens. Work made without internet is always kept.'],
   ['print','Admin passes','Print admin passes from the Print Centre. ID cards are coloured by role.'],
   ['shield','Division Viewer','A new view-only role that sees every school in the division.'],
-  ['book','Content Studio','Content Developers make new levels from a module, with answer keys and real pre-tests and post-tests.'],
+  ['shield','System Developer','The Content Developer is now the System Developer: Home shows which files did not upload and which SQL is missing, and runs the missing SQL.'],
  ],
 ];
 function wn_key(int $uid):string{return 'whatsnew_'.WHATS_NEW_ID.'_'.$uid;}

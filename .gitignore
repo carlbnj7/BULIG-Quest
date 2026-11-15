@@ -12,6 +12,8 @@ __pycache__/
 
 # Database backups saved by BULIG (Settings › Account IDs) stay on the server only
 storage/backups/
+# PHP errors caught by BULIG (v217 error log) stay on the server only
+storage/logs/
 
 # Local UI previews (kept out of the repository)
 tests/ui-preview/

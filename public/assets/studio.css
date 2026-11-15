@@ -196,3 +196,26 @@ html.dark .st-steps li{background:rgba(255,255,255,.03)}
 .st-keyl li{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 11px;background:#eef1ec;font-size:13px;font-weight:700;color:#53675a}
 .st-keyl li.ok{background:#dff3e3;color:#17652f}.st-keyl li .icon{width:14px;height:14px}
 .st-nokey{display:flex;gap:8px;align-items:center;background:#fdecec;color:#8a2b2b;border-radius:12px;padding:8px 12px;font-weight:700;font-size:13.5px}
+
+/* v217 System Developer: the update check */
+.sys-sum{display:flex;gap:16px;align-items:center;margin:0 0 18px}.sys-sum img{width:84px;height:auto;flex:none}.sys-sum>div{flex:1;min-width:0}.sys-sum h2{margin:4px 0}.sys-sum p{margin:0}
+.sys-sum.bad{background:#fffaf0}.sys-sum.ok .eyebrow{color:#17652f}
+.sys-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:0 0 18px}.sys-grid .card{margin:0}
+.sys-pill{border-radius:999px;padding:3px 10px;font-weight:800;font-size:.72rem;white-space:nowrap}.sys-pill.bad{background:#fbe6e6;color:#a33}.sys-pill.wait{background:#fff1c2;color:#7a5600}.sys-pill.ok{background:#dff3e3;color:#17652f}
+.sys-list li{align-items:flex-start}.sys-list li span{display:flex;flex-direction:column;min-width:0}.sys-list small{font-weight:500;color:#6b7266;font-size:12px}.sys-list code{font-size:12.5px;word-break:break-all;color:inherit;background:none;padding:0}
+.sys-list li.wait{color:#7a5600}.sys-list li.wait .icon{background:#fff1c2;color:#8a6200;flex:none;width:26px;height:26px;padding:5px;border-radius:50%}
+.sys-how{margin-top:12px}.sys-how summary{cursor:pointer;font-weight:700;color:#17652f}.sys-how ol{margin:8px 0 0;padding-left:20px;line-height:1.7}
+.sys-run{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:14px 0 6px}.sys-run label{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:13px;flex:1;min-width:180px}
+.sys-test{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}.sys-test h2{display:flex;gap:8px;align-items:center;margin:0 0 4px;font-size:1.15rem}.sys-grid{align-items:start}.sys-test p{margin:0}
+@media(max-width:860px){.sys-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.sys-sum{flex-direction:column;text-align:center}.sys-sum img{width:70px}.sys-run .btn{width:100%;justify-content:center}}
+html.dark .sys-sum.bad{background:#2c2715}html.dark .sys-list small{color:#a9b3a5}
+
+/* v217 error log */
+.sys-err{margin:0 0 18px}.sys-elist{list-style:none;margin:6px 0 12px;padding:0;display:flex;flex-direction:column;gap:10px}
+.sys-elist li{border-radius:14px;padding:10px 14px;border:1px solid #f3d9a6;background:#fffaf0}.sys-elist li.bad{border-color:#f3c3be;background:#fff6f5}
+.sys-eh{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.sys-eh span{color:#6b7266;font-size:12.5px}.sys-elist li.bad .sys-eh b{color:#9b1c14}
+.sys-elist p{margin:4px 0 0;font-size:14px}.sys-elist details{margin-top:6px}.sys-elist summary{cursor:pointer;font-weight:700;font-size:13px;color:#17652f}
+.sys-elist code{display:block;font-size:12px;word-break:break-word;white-space:pre-wrap;margin:6px 0 4px;color:inherit;background:none;padding:0}.sys-elist small{color:#6b7266;font-size:12px;word-break:break-all}
+.okline-sys{display:flex;gap:8px;align-items:center;font-weight:700;color:#17652f;margin:4px 0 0}.okline-sys .icon{width:20px;height:20px}
+html.dark .sys-elist li{background:#2c2715;border-color:#5a4a1e}html.dark .sys-elist li.bad{background:#3a1f1d;border-color:#6b2f2a}html.dark .sys-elist li.bad .sys-eh b{color:#ffb4ab}

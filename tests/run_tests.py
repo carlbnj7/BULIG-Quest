@@ -416,6 +416,22 @@ def run_pages(acc):
         _, url, text = a.req('?page=content')
         check('The Lesson studio is gone: its old link goes to Admin Home and the menu has no Lesson studio',
               'page=dashboard' in url and 'Lesson studio' not in text and 'href="?page=content"' not in text, url)
+        _, url, text = a.req('?page=studio_review')
+        check('The Content Studio is gone: its review page goes to Home and the menu has no Content review (v217)',
+              'page=dashboard' in url and 'Content review' not in text and 'href="?page=studio_review"' not in text, url)
+        _, _, text = a.req('index.php', {'action': 'studio_approve', 'lesson': '1', 'csrf': a.token('?page=dashboard')})
+        check('Studio actions are refused after the Content Studio was removed (v217)', 'removed' in text or 'Only' in text, text[:200])
+        _, _, text = a.req('index.php', {'action': 'sys_run_sql', 'password': 'x', 'csrf': a.token('?page=dashboard')})
+        check('Only the System Developer can run the missing SQL (v217)', 'Only the System Developer' in text, text[:200])
+        sc = php_cli('probe.php', 'syscheck', 0)
+        check('Update check: the SQL splitter keeps ; inside quotes and comments out (v217)',
+              sc['n'] == 3 and "it''s; ok" in sc['second'] and not sc['second'].startswith('/*'), str(sc['n']) + ' ' + sc['second'][:80])
+        check('Update check: a migration is checked by its tables and columns, not its indexes (v217)',
+              sc['probes'] == [['week_plans', None], ['activity_completion', 'time_secs']], str(sc['probes']))
+        check('Update check: every migration is listed, none missing in the test database, every file matches (v217)',
+              sc['migs'] >= 50 and sc['todo'] == 0 and sc['files_total'] > 300 and not sc['files_bad'], f"{sc['migs']} {sc['todo']} {sc['files_total']} {sc['files_bad'][:5]}")
+        check('Error log: errors are said in plain words (v217)',
+              'table is missing (pupil_notes)' in sc['plain_table'] and 'file is missing or old' in sc['plain_fn'], sc['plain_table'] + ' / ' + sc['plain_fn'])
         _, _, text = a.req('index.php', {'action': 'save_activity', 'id': '1', 'title': 'Changed', 'csrf': a.token('?page=dashboard')})
         check('Module content cannot be changed by the administrator', 'Unknown action' in text or 'not found' in text.lower())
         status, _, text = a.req('?page=ratings&period=all')

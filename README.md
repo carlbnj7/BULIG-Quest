@@ -22,7 +22,7 @@ For Hostinger without a PHP terminal, use the three SQL files in `database/migra
 1. Put the `bulig` folder in `C:\xampp\htdocs\bulig`.
 2. Start Apache and MySQL in XAMPP.
 3. Open `http://localhost/phpmyadmin`. Create an empty database named `DEPED_BULIG`, using `utf8mb4_unicode_ci`.
-4. Select that database and import **`database/fresh_install_v2.sql`**. This single file installs schema, all 12 lessons, and the v2 changes. Do not additionally import the older `schema.sql` or `content.sql`.
+4. Select that database and import **`live-update/BULIG-v218-FRESH-INSTALL.sql`**. This one file has the whole database: every update up to v218 and every level and lesson. Do not import any other SQL file after it.
 5. Check `config/database.php`. Local defaults are host `127.0.0.1`, port `3306`, database `DEPED_BULIG`, user `root`, blank password.
 6. Double-click `CREATE-ADMIN.bat` and choose an admin ID, name, and password of 8–72 characters. No shared default accounts are included.
 7. Open `http://localhost/bulig/public/?page=login&role=admin`.

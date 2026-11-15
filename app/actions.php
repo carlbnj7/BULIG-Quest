@@ -23,6 +23,7 @@ function action():void{
  if($action==='role_switch')role_switch_action();
  if(str_starts_with($action,'org_'))org_action($action);
  if(str_starts_with($action,'studio_'))studio_action($action);
+ if(str_starts_with($action,'sys_'))sys_action($action);   // v217 System Developer: run the missing SQL
  if($action==='tk_design'){$t=require_role('teacher');$d=(string)($_POST['design']??'b');if(!function_exists('id_design')||!isset(ID_THEMES[$d]))$d='b';q('INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)',['tk_design_'.(int)$t['id'],$d]);flash('Ticket design saved.');go('?page=cards'.(isset($_POST['section'])?'&section='.(int)$_POST['section']:''));}   // v216   // v215 Content Studio (app/studio.php)
  if(!in_array($action,['first_password','logout','login','key_login','quick_login'],true)&&teacher_must_change(current_user()))fail('Make your own password first.',403);
  if(in_array($action,['bug_report_update','bug_report_submit','bug_popup_ack','bug_adopt'],true))bugflow_action($action);

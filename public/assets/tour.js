@@ -20,6 +20,7 @@
  if(page==='lesson')key=$('[data-l1-start]')?'l1-start':$('.l2-app')?'l2':$('.l1-app')?'l1':$('#activity-form')?'activity':($('.completion-card')?'lesson-done':'');
  if(page==='class_demo')key=$('#l1-demo')?'l1-demo':$('#class-demo')?'demo-slide':($('.demo-catalog')?'class_demo':'');
  if(page==='pupil')key='pupil-detail';
+ if(page==='dashboard'&&document.querySelector('.sys-sum'))key='sys_home';   // v217 the System Developer's update check
  if(page==='dashboard'&&document.querySelector('.mon-head'))key=document.querySelector('.mon-badge')?'view_dash':'role_dash';   // v211 role dashboards
  if(page==='messages'&&(q.get('tab')==='chat'||document.querySelector('.ch-shell')||document.querySelector('.mz-shell:not(.mz-sentbox)')))key='chat';
  if(page==='messages'&&document.querySelector('.mz-sentbox'))key='sent';   // v211 the administrator's Sent messages   // v209 the chat tab of Messages
@@ -442,6 +443,11 @@
    [['.org-addp'],'Add a person to a role','1. Choose the role and where. 2. A new person (BULIG Quest makes the ID and password and shows their ID card) or someone who already has an account: type an ID or a name and pick them from the list.'],
    [['.org-list'],'People and their roles','Everyone you manage, with their roles. New password makes a new password and shows their ID card; the × removes a role.'],
    [['.org-ph .btn'],'Print passes','Print an ID card for each person you manage.']],
+  sys_home:[
+   ['.sys-sum','Update check','Jarvis says in one line what is wrong after an update, or that everything is up to date.'],
+   [['.sys-grid .card'],'Files on the server','Only the files that did not upload, or are old copies, are listed. Upload each one again in FileZilla.'],
+   [['#sys-sql'],'Database (SQL)','The SQL files not imported yet. Type your password and choose Run: a backup is saved first.'],
+   [['.sys-test'],'Test as Pupil','After an update, answer a few activities as a hidden test pupil.']],
   admin_passes:[
    [['.lc-tools'],'Print ID cards','Choose what to show, then press Print. Each ID card has the ID, the starting password and a QR code.'],
    [['.idc'],'One ID card','The QR code signs the person in, even after they change their password. A new password makes a new QR code.']],

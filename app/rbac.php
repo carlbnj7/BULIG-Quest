@@ -19,7 +19,7 @@ const ROLES=[
  'district_supervisor'=>['District Supervisor','District monitoring · view only','admin','district'],
  'school_admin'=>['School Admin','School management','admin','school'],
  'principal'=>['School Principal','School monitoring · view only','admin','school'],
- 'content_dev'=>['Content Developer','Lesson content · drafts for review','studio','system'],   // v215 Content Studio: lessons only, no people (app/studio.php)
+ 'content_dev'=>['System Developer','Update check · files and SQL','studio','system'],   // v217 System Developer (was Content Developer): update check and Test as Pupil, no people (app/syscheck.php)
  'teacher'=>['Teacher','Classes and reading verification','teacher','school'],
  'pupil'=>['Pupil','Lessons and activities','pupil','school']];
 const ROLE_VIEWERS=['division_viewer','municipal_viewer','district_supervisor','principal'];
@@ -111,7 +111,7 @@ function rbac_can(string $cap):bool{$u=function_exists('current_user')?current_u
 /** Server-side check for every form: viewers only look; system-wide actions are for the Central Admin. */
 function rbac_guard_action(string $action):void{
  $u=current_user();if(!$u||empty($u['active_role']))return;
- if(($u['active_role']??'')==='content_dev'&&!in_array($action,array_merge(ROLE_VIEWER_ACTIONS,defined('STUDIO_ACTIONS')?STUDIO_ACTIONS:[]),true))fail('The Content Developer role works on lessons only.',403);   // v215
+ if(($u['active_role']??'')==='content_dev'&&!in_array($action,array_merge(ROLE_VIEWER_ACTIONS,defined('STUDIO_ACTIONS')?STUDIO_ACTIONS:[],['sys_run_sql','sys_clear_errors']),true))fail('The System Developer role works on the update check only.',403);   // v215
  if(!empty($u['is_tester'])&&in_array($action,['rate_app','rate_later','message_send','message_preview','message_reply','chat_send','chat_class','privacy_delete_ask'],true))fail('This is not available in test mode.',403);
  if(!empty($u['view_only'])&&!in_array($action,ROLE_VIEWER_ACTIONS,true))fail('Your role ('.ROLES[$u['active_role']][0].') can view but not change this.',403);
  if(($u['role']??'')==='admin')foreach(ROLE_CAP_ACTIONS as $cap=>$acts)if(in_array($action,$acts,true)&&!rbac_can($cap))fail('Your role ('.ROLES[$u['active_role']][0].') cannot do this. '.($cap==='teachers'?'Teachers are managed by the School Admin.':'Ask the Division Admin.'),403);
@@ -387,6 +387,7 @@ function monitor_dashboard(array $u):void{
  echo '<div class="mon-head"><div><span class="eyebrow">'.e(mb_strtoupper(ROLES[$r][0])).($vo?' · VIEW ONLY':' · DASHBOARD').'</span><h1>'.e($place!==''?$place:'My area').'</h1><p class="muted">'.($vo?'Reading progress in your area. You can look and compare; changes are made by the teachers and administrators.':'Create and manage the accounts under you, and follow reading progress in your area.').'</p></div>'.($vo?'<span class="mon-badge">'.icon('eye').'View only</span>':'').'</div>';
  if(function_exists('announcements_board')&&($ann=announcements_for($u))||(!$vo&&rbac_can('announce')))echo announcements_board($ann,!$vo&&rbac_can('announce')?'?page=settings&tab=announcements':'');   // v212 bulletin board
  if(function_exists('backup_remind_card'))echo backup_remind_card();
+ if(($u['active_role']??'')==='central_admin'&&function_exists('sys_errors')&&sys_errors(7))echo sys_errors_card(false);   // v217 the error log (the System Developer clears it)
  if(function_exists('growth_by_grade_card'))echo growth_by_grade_card(" AND u.school_id IN ($in)");   // v216
  if(!$vo)echo role_manage_panel($u);
  echo admin_kpis([['school',count($S),count($S)===1?'School':'Schools','',false],['user',$teachers,'Teachers','',false],['people',number_format($pupils),'Pupils','',false],['fire',number_format($active),'Learned this week',$pupils?round($active/$pupils*100).'% of pupils':'',false],['book',number_format($lessons),'Lessons finished this week','',false],['mic',number_format($wait),'Readings waiting for teachers','',false]]);
@@ -419,7 +420,7 @@ function role_manage_panel(array $u):string{
   $kp[]=[in_array($k,ROLE_VIEWERS,true)?'eye':($k==='pupil'?'user':($k==='teacher'?'people':'shield')),$c,ROLES[$k][0].($c===1?'':'s'),in_array($k,ROLE_VIEWERS,true)?'view only':'',false];}
  $wait=in_array($r,['central_admin','municipal_admin','district_admin'],true)?(int)val('SELECT COUNT(*) FROM schools WHERE active=1 AND district_id IS NULL'.($r==='central_admin'?'':' AND 0')):0;
  if($wait)$kp[]=['alert',$wait,'Schools waiting for a district','choose their district',true];
- $who=['central_admin'=>'Division Viewers, Municipal Admins, Municipal Viewers and Content Developers','municipal_admin'=>'District Admins and District Supervisors','district_admin'=>'School Admins and School Principals','school_admin'=>'Teachers and Pupils'][$r]??'';
+ $who=['central_admin'=>'Division Viewers, Municipal Admins, Municipal Viewers and System Developers','municipal_admin'=>'District Admins and District Supervisors','district_admin'=>'School Admins and School Principals','school_admin'=>'Teachers and Pupils'][$r]??'';
  $idnote='';   // v211 IDs never change (the Get my ID button is removed)
  return '<section class="card mon-manage">'.$idnote.'<div class="ws-hd"><h2>'.icon('useredit').'Accounts you manage</h2></div><p class="muted">You create the '.e($who).' for your area. Each person gets an ID and a password from BULIG Quest.</p>'.admin_kpis($kp)
   .'<div class="ws-btns"><a class="btn primary" href="?page=org#org-create">'.icon('useredit').'Create an account</a><a class="btn secondary" href="?page=org#org-people">'.icon('people').'Give a role to an existing account</a>'.($r==='school_admin'?'<a class="btn secondary" href="?page=add_teachers">'.icon('people').'Add many teachers</a>':'').($wait?'<a class="btn secondary" href="?page=org#org-review">'.icon('school').'Review schools</a>':'').'<a class="btn secondary" href="?page=org">'.icon('school').'Organization chart</a></div></section>';
@@ -505,7 +506,7 @@ function role_place_ids(string $role,int $scope):array{
 }
 /** The Division Admin chooses the ID card design (three designs). */
 function id_design_picker(string $back):string{
- $lg='';foreach(['central_admin'=>'Division','municipal_admin'=>'Municipal','district_admin'=>'District','school_admin'=>'School','content_dev'=>'Content Developer','teacher'=>'Teacher'] as $k=>$t)$lg.='<span><i class="idt-sw idt-sw-'.ROLE_THEMES[$k].'" aria-hidden="true"></i>'.e($t).'</span>';
+ $lg='';foreach(['central_admin'=>'Division','municipal_admin'=>'Municipal','district_admin'=>'District','school_admin'=>'School','content_dev'=>'System Developer','teacher'=>'Teacher'] as $k=>$t)$lg.='<span><i class="idt-sw idt-sw-'.ROLE_THEMES[$k].'" aria-hidden="true"></i>'.e($t).'</span>';
  return '<div class="idc-pick no-print card"><p class="idt-legend muted"><b>ID colours by role:</b> '.$lg.' <small>Admins and view-only roles at the same level share a colour; the role is printed under the name.</small></p></div>';
 }
 

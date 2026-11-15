@@ -11,7 +11,7 @@ if(PHP_SAPI!=='cli'){
  header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
  header('Cache-Control: no-store');
 }
-function db():PDO{global $config;static $pdo;if(!$pdo){$pdo=new PDO("mysql:host={$config['host']};port={$config['port']};dbname={$config['name']};charset=utf8mb4",$config['user'],$config['pass'],[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_EMULATE_PREPARES=>false]);$pdo->exec("SET time_zone = '".date('P')."'");}return $pdo;}
+function db():PDO{global $config;static $pdo;if(!$pdo){$pdo=new PDO("mysql:host={$config['host']};port={$config['port']};dbname={$config['name']};charset=utf8mb4",$config['user'],$config['pass'],[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC,PDO::ATTR_EMULATE_PREPARES=>false]);$pdo->exec("SET time_zone = '".date('P')."'");try{$pdo->exec("SET SESSION sql_mode=REPLACE(@@SESSION.sql_mode,'ONLY_FULL_GROUP_BY','')");}catch(Throwable $e){}}return $pdo;}   // v218 MySQL 8 (Laragon) is strict about GROUP BY by default; MariaDB is not
 function q(string $sql,array $p=[]):PDOStatement{$s=db()->prepare($sql);$s->execute($p);return $s;}
 function rows(string $sql,array $p=[]):array{$r=q($sql,$p)->fetchAll();if(!empty($GLOBALS['tc_collect']))foreach($r as $x)tc_keep($x);return $r;}
 function one(string $sql,array $p=[]):?array{$r=q($sql,$p)->fetch()?:null;if($r&&!empty($GLOBALS['tc_collect']))tc_keep($r);return $r;}
@@ -211,6 +211,7 @@ function pupil_details_input(int $pupilId=0):array{
  return [$sex?:null,$lrn?:null];
 }
 function save_pupil_details(int $id,array $details):void{
+ $details=[$details[0]??null,$details[1]??null];   // v217 the error log found callers with no details
  try{if(val('SELECT pupil_id FROM pupil_details WHERE pupil_id=?',[$id]))q('UPDATE pupil_details SET sex=?,lrn=? WHERE pupil_id=?',[$details[0],$details[1],$id]);else q('INSERT INTO pupil_details(pupil_id,sex,lrn) VALUES(?,?,?)',[$id,$details[0],$details[1]]);}
  catch(PDOException $e){if(($e->errorInfo[1]??0)===1062)fail('This LRN is already assigned to a pupil.');throw $e;}
 }
@@ -279,9 +280,25 @@ function next_learning_lesson_check(int $pid):?array{
  return null;
 }
 
+/* v217 Error log: PHP errors, uncaught problems and stopped pages are saved in storage/logs/errors.log (one JSON line
+   each, never reachable from the web), so the System Developer sees them on the update check (app/syscheck.php). */
+function bulig_log_error(string $kind,string $msg,string $file='',int $line=0):void{
+ static $n=0;if(++$n>20)return;
+ try{$dir=__DIR__.'/../storage/logs';if(!is_dir($dir))@mkdir($dir,0750,true);
+  if(!is_file($dir.'/.htaccess'))@file_put_contents($dir.'/.htaccess',"Require all denied\n");
+  $f=$dir.'/errors.log';if(is_file($f)&&filesize($f)>1048576)@rename($f,$dir.'/errors-old.log');
+  $root=realpath(__DIR__.'/..')?:dirname(__DIR__);$file=str_replace([$root.'/',$root.'\\'],'',$file);
+  @file_put_contents($f,json_encode(['t'=>date('Y-m-d H:i:s'),'k'=>$kind,'m'=>mb_substr(preg_replace('/\s+/',' ',$msg),0,600),'f'=>$file,'l'=>$line,'p'=>mb_substr((string)($_GET['page']??($_POST['action']??'')),0,40),'r'=>(string)($_SESSION['active_role']??'')],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)."\n",FILE_APPEND|LOCK_EX);
+ }catch(Throwable $e){}
+}
+set_error_handler(function(int $no,string $msg,string $file='',int $line=0):bool{
+ if(!(error_reporting()&$no))return false;
+ bulig_log_error(in_array($no,[E_WARNING,E_USER_WARNING],true)?'warning':(in_array($no,[E_DEPRECATED,E_USER_DEPRECATED],true)?'deprecated':'notice'),$msg,$file,$line);return false;});
+register_shutdown_function(function():void{$e=error_get_last();if($e&&in_array($e['type'],[E_ERROR,E_PARSE,E_CORE_ERROR,E_COMPILE_ERROR],true))bulig_log_error('fatal',(string)$e['message'],(string)$e['file'],(int)$e['line']);});
+
 /* The app's parts, loaded in this order. If an update left one out, BULIG shows a clear message
    (status 503) instead of a blank "HTTP 500" page. */
-const BULIG_PARTS=['school_levels','coach','whats_new','privacy','chat','rbac','level2_cards','presentation','pupil_import','admin_pin','admin','pupil_welcome','pupil_fun','teacher_fun','class_done','growth','reach','cards','offline','saved_login','level1','level2a','level4','scoring','post_gate','reading_board','insights','notify','help','month_recap','schedule','skipped','reader_level','login_ui','checkup','teacher_accounts','account_ids','reading_check','staff_ui','ratings','section_report','reading_growth','quest_extras','class_tools','names','sections','account_delete','friends','story','schools','school_page','directory','castle','cycles','jeepy','messages','bug_workflow','reading_verification','reading_support','streak','studio'];
+const BULIG_PARTS=['school_levels','coach','whats_new','privacy','chat','rbac','level2_cards','presentation','pupil_import','admin_pin','admin','pupil_welcome','pupil_fun','teacher_fun','class_done','growth','reach','cards','offline','saved_login','level1','level2a','level4','scoring','post_gate','reading_board','insights','notify','help','month_recap','schedule','skipped','reader_level','login_ui','checkup','teacher_accounts','account_ids','reading_check','staff_ui','ratings','section_report','reading_growth','quest_extras','class_tools','names','sections','account_delete','friends','story','schools','school_page','directory','castle','cycles','jeepy','messages','bug_workflow','reading_verification','reading_support','streak','studio','syscheck'];
 function bulig_missing_files(array $missing):never{
  $list=implode(', ',array_map(fn($f)=>'app/'.$f.'.php',$missing));
  if(PHP_SAPI==='cli'){fwrite(STDERR,'BULIG Quest cannot start. Missing: '.$list."\n");exit(1);}

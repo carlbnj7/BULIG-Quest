@@ -54,3 +54,43 @@
   const host=t.closest(BOUNCE);if(host){const ic=host.querySelector('.icon:not(.flip)');if(ic){ic.classList.remove('ck-bounce');void ic.getBoundingClientRect();ic.classList.add('ck-bounce');setTimeout(()=>ic.classList.remove('ck-bounce'),560);}}
  },{passive:true});
 })();
+
+/* v218 Smooth and light motion:
+   1. Cards glide in once when a page opens (only movement and fading, which phones draw without effort; at most 8 cards,
+      only the ones on screen, never a card that already has its own animation).
+   2. An animation that loops forever stops while it is off the screen, and starts again when it comes back.
+   3. On slow phones (the lighter look in Settings, or 4 GB memory or less) looping decorations play 3 times and rest.
+      The microphone, timers and Max's reading keep moving, because they tell the pupil something is happening.
+   Everything stays still with reduce motion or Settings › Calm mode. */
+(function(){
+ 'use strict';
+ const d=document.documentElement;
+ if((window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)||d.classList.contains('a11y-still'))return;
+ const lite=()=>d.classList.contains('lg-lite')||d.classList.contains('map-lite');
+ const KEEP='.l1-mic,.mp-dot,.mp-bars,.wc-mic,.wc-wave,.ab-mic,.mic-pill,.rs-mic,.fluency-timer,.narr-big,.tour-voice,.rk-say,.rx-ring,.rx-timer,[aria-busy="true"],.spin,.loading,.boot';
+ /* 1. cards glide in */
+ const enter=()=>{
+  const m=document.querySelector('main.main')||document.querySelector('main');if(!m||!m.animate)return;
+  let i=0;const H=innerHeight;
+  for(const el of m.querySelectorAll(':scope>.card,:scope>section,:scope>div>.card,:scope>div>section.card,:scope>.grid>*')){
+   if(i>=8)break;const r=el.getBoundingClientRect();if(r.top>H||r.bottom<0||r.height<8)continue;
+   if(getComputedStyle(el).animationName!=='none'||el.closest('[class*="pop"],[role=dialog]'))continue;
+   el.animate([{opacity:0,transform:'translateY(12px)'},{opacity:1,transform:'none'}],{duration:420,delay:i*50,easing:'cubic-bezier(.2,.8,.2,1)',fill:'backwards'});i++;}
+ };
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',enter,{once:true});else enter();
+ /* 2 and 3. looping animations */
+ if(!document.getAnimations||!('IntersectionObserver' in window)||typeof CSSAnimation==='undefined')return;
+ const io=new IntersectionObserver(es=>{for(const e of es)for(const a of (e.target.__bqA||[])){try{
+   if(e.isIntersecting){if(a.__bqP){a.__bqP=0;a.play();}}
+   else if(a.playState==='running'){a.__bqP=1;a.pause();}}catch(x){}}},{rootMargin:'120px'});
+ const scan=()=>{
+  for(const a of document.getAnimations()){
+   if(a.__bqSeen||!(a instanceof CSSAnimation))continue;a.__bqSeen=1;
+   const t=a.effect&&a.effect.target;if(!(t instanceof Element))continue;
+   let it;try{it=a.effect.getTiming().iterations;}catch(x){continue;}if(it!==Infinity)continue;
+   if(lite()&&!t.closest(KEEP)){try{a.effect.updateTiming({iterations:3});}catch(x){}continue;}
+   (t.__bqA=t.__bqA||[]).push(a);io.observe(t);}
+ };
+ let timer=0;const later=()=>{if(!timer)timer=setTimeout(()=>{timer=0;scan();},500);};
+ addEventListener('load',()=>{scan();new MutationObserver(later).observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:['class']});});
+})();
