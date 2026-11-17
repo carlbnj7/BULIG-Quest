@@ -54,3 +54,23 @@ html.dark .sc-box{background:#16241b;color:#e8f0ea}html.dark .sc-pad button{back
 .sc-box .sc-pad button{width:100%!important;min-width:0;max-width:none;grid-column:auto!important;grid-row:auto!important;margin:0;padding:0;font-size:1.5rem}
 .sc-box .sc-form{display:block}
 html.dark .sc-pad .sc-ok{background:#1c7a3e;color:#fff;border-color:#2a9d55;box-shadow:0 3px 0 #0f4a24}
+/* v220 Sign-in story panel: Bukidnon mountains at sunrise (always green; the square photo and the kids stay) */
+html:root body.login-page.login-page.login-page:not(.admin-mode) section.login-story.login-story{background:url(images/sky/panel-mountains.svg) center bottom/cover no-repeat,#0a6324!important}
+html:root body.login-page:not(.admin-mode) .login-story .lfx-hills,html:root body.login-page:not(.admin-mode) .login-story .lfx-glow,html:root body.login-page:not(.admin-mode) .login-story .lfx-cloud{display:none!important}
+/* v220 Secret Code popup fits short PC screens (laptops 768 px and less): smaller character and keys, scroll inside if needed */
+.sc-box{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
+.sc-shade{align-items:center}
+@media (max-height:860px){
+ .sc-box{padding:14px 20px 10px}
+ .sc-ch{height:84px}
+ .sc-box .wn-badge{margin:2px auto 4px}
+ .sc-box h2{font-size:1.25rem;margin:2px 0 4px}
+ .sc-box .muted{font-size:.9rem;margin:0 0 4px}
+ .sc-err{padding:6px 10px;font-size:13px;margin:4px 0}
+ .sc-dots{margin:8px 0 10px}.sc-dots b{width:16px;height:16px}
+ .sc-box .sc-pad{gap:8px;max-width:260px}
+ .sc-box .sc-pad button{height:46px;font-size:1.3rem;border-radius:14px}
+ .sc-rules{margin:8px auto 0;font-size:12px;gap:2px}
+ .sc-tip{margin:8px 0 0}.sc-cancel{margin-top:4px}
+}
+@media (max-height:680px){.sc-ch{height:64px}.sc-box .sc-pad button{height:40px}.sc-box .muted{display:none}.sc-err+.muted,.sc-box h2+.muted{display:block}}
